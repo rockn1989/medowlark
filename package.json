@@ -1,0 +1,23 @@
+{
+  "name": "medowlark.js",
+  "version": "1.0.0",
+  "description": "",
+  "main": "medowlark.js",
+  "scripts": {
+    "test": "serve"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+ssh://git@github.com/rockn1989/medowlark.git"
+  },
+  "author": "rockn89",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/rockn1989/medowlark/issues"
+  },
+  "homepage": "https://github.com/rockn1989/medowlark#readme",
+  "dependencies": {
+    "express": "^4.16.4",
+    "express-handlebars": "^3.0.0"
+  }
+}
