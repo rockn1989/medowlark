@@ -26,6 +26,12 @@ app.use(function (req, res, next) {
     next();
 });
 
+app.use(function (req, res, next) {
+    if (!res.locals.partials) res.locals.partials = {};
+    res.locals.partials.weatherContext = getWeatherData();
+    next();
+});
+
 app.get('/', function (req, res) {
     res.render('home');
 });
@@ -85,3 +91,31 @@ app.listen(app.get('port'), function () {
 });
 
 if (app.thing == null) console.log('Бе-е!');
+
+function getWeatherData() {
+    return {
+        locations: [
+            {
+                name: 'Портленд',
+                forecastUrl: 'http://wunderground.com/US/OR/Portland.html',
+                iconUrl: 'http://icons-ak.wxug.com/i/c/k/cloudy.gif',
+                weather: 'Сплошная облачность',
+                temp: '54.1 F (12.3 C)'
+            },
+            {
+                name: 'Бенд',
+                forecastUrl: 'http://wunderground.com/US/OR/Bend.html',
+                iconUrl: 'http://icons-ak.wxug.com/i/c/k/partlycloudy.gif',
+                weather: 'Мало облачно',
+                temp: '55.1 F (12.8 C)'
+            },
+            {
+                name: 'Манзанита',
+                forecastUrl: 'http://wunderground.com/US/OR/Manzanita.html',
+                iconUrl: 'http://icons-ak.wxug.com/i/c/k/rain.gif',
+                weather: 'Небольшой дождь',
+                temp: '55.0 F (12.3 C)'
+            },
+        ]
+    };
+}
