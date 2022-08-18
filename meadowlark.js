@@ -1,6 +1,6 @@
 const express = require("express");
 const { engine } = require("express-handlebars");
-const getFortune = require("./lib/fortute");
+const handlers = require("./lib/handlers");
 
 const app = express();
 
@@ -11,25 +11,18 @@ app.use(express.static(__dirname + "/public"));
 app.engine("handlebars", engine());
 app.set("view engine", "handlebars");
 
-app.get("/", (req, res) => {
-  res.render("home");
-});
+app.get("/", handlers.home);
 
-app.get("/about", (req, res) => {
-  res.render("about", { fortunes: getFortune() });
-});
+app.get("/about", handlers.about);
 
-app.use((req, res) => {
-  res.status(404);
-  res.render("404");
-});
+app.use(handlers.notFound);
 
-app.use((err, req, res, next) => {
-  console.log(err);
-  res.status(500);
-  res.render(500);
-});
+app.use(handlers.serverError);
 
-app.listen(port, () => {
-  console.log(`Сервер запущен на порту ${port}`);
-});
+if (require.main === module) {
+  app.listen(port, () => {
+    console.log(`Сервер запущен на порту ${port}`);
+  });
+} else {
+  module.exports = app;
+}
