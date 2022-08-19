@@ -11,6 +11,8 @@ app.use(express.static(__dirname + "/public"));
 app.engine("handlebars", engine());
 app.set("view engine", "handlebars");
 
+app.disable("x-powered-by");
+
 app.get("/", handlers.home);
 
 app.get("/about", handlers.about);
