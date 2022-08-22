@@ -3,13 +3,12 @@ const { engine } = require("express-handlebars");
 const handlers = require("./lib/handlers");
 
 const app = express();
-
 const port = process.env.PORT || 3000;
 
 app.use(express.static(__dirname + "/public"));
 
-app.engine("handlebars", engine());
-app.set("view engine", "handlebars");
+app.engine(".hbs", engine({ extname: ".hbs" }));
+app.set("view engine", ".hbs");
 
 app.disable("x-powered-by");
 
