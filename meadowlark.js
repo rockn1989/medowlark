@@ -7,8 +7,6 @@ const handlers = require("./lib/handlers");
 const flashMiddleware = require('./lib/middleware/flash');
 const credentials = require('./.credentials.development.json');
 
-const app = express();
-
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser(credentials.cookieSecret));
 app.use(expressSession({
