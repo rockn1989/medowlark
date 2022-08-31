@@ -1,4 +1,7 @@
 const express = require("express");
+const cluster = require('cluster');
+const morgan = require('morgan');
+const fs = require('fs');
 const cookieParser = require('cookie-parser');
 const expressSession = require('express-session');
 const { engine } = require("express-handlebars");
@@ -6,6 +9,18 @@ const multiparty = require('multiparty');
 const handlers = require("./lib/handlers");
 const flashMiddleware = require('./lib/middleware/flash');
 const credentials = require('./.credentials.development.json');
+
+const app = express();
+
+switch(app.get('env')) {
+  case 'development':
+    app.use(morgan('dev'));
+    break;
+  case 'production':
+    const stream = fs.createWriteStream(__dirname + '/access.log', {flags: 'a'});
+    app.use(morgan('combined', { stream }));
+    break;
+}
 
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser(credentials.cookieSecret));
@@ -23,6 +38,15 @@ const port = process.env.PORT || 3000;
 app.use(express.static(__dirname + "/public"));
 
 app.use(flashMiddleware);
+
+app.use((req, res, next) => {
+  if (cluster.isWorker) {
+    console.log(`Исполнитель ${cluster.worker.id} получил запрос`);
+  }
+
+  next();
+  
+});
 
 app.get("/", handlers.home);
 
@@ -59,12 +83,17 @@ app.engine(
     },
   })
 );
+
 app.set("view engine", ".hbs");
 
-if (require.main === module) {
+function startServer(port) {
   app.listen(port, () => {
-    console.log(`Сервер запущен на порту ${port}`);
+    console.log(`Сервер запущен на порту ${port} в режиме ${app.get('env')}`);
   });
+}
+
+if (require.main === module) {
+  startServer(process.env.PORT || 3000);
 } else {
-  module.exports = app;
+  module.exports = startServer;
 }
