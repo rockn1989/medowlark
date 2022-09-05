@@ -4,11 +4,24 @@ const morgan = require('morgan');
 const fs = require('fs');
 const cookieParser = require('cookie-parser');
 const expressSession = require('express-session');
+const MongoDBStore = require('express-mongodb-session')(expressSession);
 const { engine } = require("express-handlebars");
 const multiparty = require('multiparty');
 const handlers = require("./lib/handlers");
 const flashMiddleware = require('./lib/middleware/flash');
 const credentials = require('./.credentials.development.json');
+
+const store = new MongoDBStore({
+  uri: credentials.mongo.connectionString,
+  collection: "mongoSessions",
+  expiresKey: `_ts`,
+});
+
+store.on('error', (err) => {
+  console.log(err);
+});
+
+require('./db');
 
 const app = express();
 
@@ -28,7 +41,11 @@ app.use(expressSession({
   resave: false,
   saveUninitialized: false,
   secret: credentials.cookieSecret,
-  name: `sessions_id`
+  name: `sessions_id`,
+  store: store,
+  cookie: {
+    maxAge: 1000 * 60 * 60 * 24 * 7
+  }
 }));
 
 app.disable("x-powered-by");
@@ -65,6 +82,10 @@ app.post('/api/vacation-photo-contest/:year/:month', (req, res) => {
     handlers.api.vacationPhotoContest(req, res, fields, files);
   });
 });
+
+app.get('/vacations', handlers.listVacations);
+app.get('/notify-me-when-in-season', handlers.notifyWhenInSeasonForm);
+app.post('/notify-me-when-in-season', handlers.notifyWhenInSeasonProcess);
 
 app.use(handlers.notFound);
 
