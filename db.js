@@ -72,11 +72,17 @@ Vacation.find((err, vacations) => {
 
 module.exports = {
   getVacations: async (options = {}) => Vacation.find(options),
+  getVacationBySku: async (sku) => Vacation.findOne({ sku }),
+  deleteVacation: async(sku) => Vacation.deleteOne({ sku }, function(err, obj) {
+    if (err) console.log(err);
+    console.log('deleted');
+    db.close();
+  }),
   addVacationInSeasonListener: async (email, sku) => {
     await VacationInSeasonListener.updateOne(
       { email },
       { $push: { skus: sku } },
       { upsert: true }
-    )
+    );
   },
 }

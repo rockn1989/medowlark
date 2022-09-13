@@ -1,29 +1,21 @@
 const express = require("express");
-const cluster = require('cluster');
 const morgan = require('morgan');
 const fs = require('fs');
 const cookieParser = require('cookie-parser');
-const expressSession = require('express-session');
-const MongoDBStore = require('express-mongodb-session')(expressSession);
-const { engine } = require("express-handlebars");
-const multiparty = require('multiparty');
+const cors = require('cors');
+
 const handlers = require("./lib/handlers");
-const flashMiddleware = require('./lib/middleware/flash');
 const credentials = require('./.credentials.development.json');
 
-const store = new MongoDBStore({
-  uri: credentials.mongo.connectionString,
-  collection: "mongoSessions",
-  expiresKey: `_ts`,
-});
-
-store.on('error', (err) => {
-  console.log(err);
-});
 
 require('./db');
 
 const app = express();
+
+app.use(cors({
+  credentials: true,
+  origin: ['http://localhost:3000']
+}));
 
 switch(app.get('env')) {
   case 'development':
@@ -35,77 +27,26 @@ switch(app.get('env')) {
     break;
 }
 
-app.use(express.urlencoded({ extended: true }));
+app.use(express.json());
+app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser(credentials.cookieSecret));
-app.use(expressSession({
-  resave: false,
-  saveUninitialized: false,
-  secret: credentials.cookieSecret,
-  name: `sessions_id`,
-  store: store,
-  cookie: {
-    maxAge: 1000 * 60 * 60 * 24 * 7
-  }
-}));
 
 app.disable("x-powered-by");
 
-const port = process.env.PORT || 3000;
+const port = process.env.PORT || 3033;
 
 app.use(express.static(__dirname + "/public"));
 
-app.use(flashMiddleware);
-
-app.use((req, res, next) => {
-  if (cluster.isWorker) {
-    console.log(`Исполнитель ${cluster.worker.id} получил запрос`);
-  }
-
-  next();
-  
-});
-
-app.get("/", handlers.home);
-
-app.get("/about", handlers.about);
-
-app.get("/newsletter-signup", handlers.newsletterSignup);
-app.get("/newsletter-signup/thank-you", handlers.newsletterSignupThankYou);
-app.get("/newsletter-archive", handlers.newsletterArchive);
-app.post("/newsletter-signup/process", handlers.newsletterSignupProcess);
-app.post('/api/newsletter-signup', handlers.api.newsletterSignup);
-
-app.get('/contest/vacation-photo', handlers.vacationPhotoContest)
-app.post('/api/vacation-photo-contest/:year/:month', (req, res) => {
-  const form = new multiparty.Form();
-  form.parse(req, (err, fields, files) => {
-    handlers.api.vacationPhotoContest(req, res, fields, files);
-  });
-});
-
-app.get('/vacations', handlers.listVacations);
-app.get('/notify-me-when-in-season', handlers.notifyWhenInSeasonForm);
-app.post('/notify-me-when-in-season', handlers.notifyWhenInSeasonProcess);
+// api
+const vhost = require('vhost');
+app.get('/vacations', vhost('api.*', handlers.getVacationsApi));
+app.get('/vacation/:sku', vhost('api.*', handlers.getVacationBySkuApi));
+app.post('/vacation/:sku/notify-when-in-season', vhost('api.*', handlers.addVacationInSeasonListenerApi));
+app.delete('/vacation/:sku', vhost('api.*', handlers.requestDeleteVacationApi));
 
 app.use(handlers.notFound);
 
 app.use(handlers.serverError);
-
-app.engine(
-  ".hbs",
-  engine({
-    extname: ".hbs",
-    helpers: {
-      section: function (name, options) {
-        if (!this._sections) this._sections = {};
-        this._sections[name] = options.fn(this);
-        return null;
-      },
-    },
-  })
-);
-
-app.set("view engine", ".hbs");
 
 function startServer(port) {
   app.listen(port, () => {
@@ -114,7 +55,7 @@ function startServer(port) {
 }
 
 if (require.main === module) {
-  startServer(process.env.PORT || 3000);
+  startServer(port);
 } else {
   module.exports = startServer;
 }
